@@ -5,7 +5,7 @@ const currentChangelog = require('./current-changelog.js');
 const safeParse = require('safe-json-parse/tuple');
 const pkg = require('../package.json');
 const options = {
-  owner: 'videojs',
+  owner: 'bitwave-tv',
   repo: 'video.js',
   body: currentChangelog(),
   assets: ['./dist/video-js-' + pkg.version + '.zip'],
