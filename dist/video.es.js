@@ -1,6 +1,6 @@
 /**
  * @license
- * Video.js 7.8.2-alpha <http://videojs.com/>
+ * Video.js 7.8.2 <http://videojs.com/>
  * Copyright Brightcove, Inc. <https://www.brightcove.com/>
  * Available under Apache License Version 2.0
  * <https://github.com/videojs/video.js/blob/master/LICENSE>
@@ -32,7 +32,7 @@ import CaptionParser from 'mux.js/lib/mp4/caption-parser';
 import tsInspector from 'mux.js/lib/tools/ts-inspector.js';
 import { Decrypter, AsyncStream, decrypt } from 'aes-decrypter';
 
-var version = "7.8.2-alpha";
+var version = "7.8.2";
 
 /**
  * @file create-logger.js

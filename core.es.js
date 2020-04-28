@@ -1,6 +1,6 @@
 /**
  * @license
- * Video.js 7.8.2-alpha <http://videojs.com/>
+ * Video.js 7.8.2 <http://videojs.com/>
  * Copyright Brightcove, Inc. <https://www.brightcove.com/>
  * Available under Apache License Version 2.0
  * <https://github.com/videojs/video.js/blob/master/LICENSE>
@@ -24,7 +24,7 @@ import vtt from 'videojs-vtt.js';
 import _construct from '@babel/runtime/helpers/construct';
 import _inherits from '@babel/runtime/helpers/inherits';
 
-var version = "7.8.2-alpha";
+var version = "7.8.2";
 
 /**
  * @file create-logger.js
