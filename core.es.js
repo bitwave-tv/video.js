@@ -1,6 +1,6 @@
 /**
  * @license
- * Video.js 7.8.3 <http://videojs.com/>
+ * Video.js 7.8.4 <http://videojs.com/>
  * Copyright Brightcove, Inc. <https://www.brightcove.com/>
  * Available under Apache License Version 2.0
  * <https://github.com/videojs/video.js/blob/master/LICENSE>
@@ -24,7 +24,7 @@ import vtt from 'videojs-vtt.js';
 import _construct from '@babel/runtime/helpers/construct';
 import _inherits from '@babel/runtime/helpers/inherits';
 
-var version = "7.8.3";
+var version = "7.8.4";
 
 /**
  * @file create-logger.js
@@ -12107,7 +12107,8 @@ var Slider = /*#__PURE__*/function (_Component) {
 
     _this = _Component.call(this, player, options) || this; // Set property names to bar to match with the child Slider class is looking for
 
-    _this.bar = _this.getChild(_this.options_.barName); // Set a horizontal or vertical class on the slider depending on the slider type
+    _this.bar = _this.getChild(_this.options_.barName);
+    _this.needsRequestAnimationFrame = true; // Set a horizontal or vertical class on the slider depending on the slider type
 
     _this.vertical(!!_this.options_.vertical);
 
@@ -12339,13 +12340,22 @@ var Slider = /*#__PURE__*/function (_Component) {
       return progress;
     }
 
-    this.progress_ = progress;
+    this.progress_ = progress; // Prevent multiple RAF's from being called when tab is in background since setInterval runs in background, but RAF does not.
+
+    if (!this.needsRequestAnimationFrame) {
+      return;
+    }
+
     this.requestAnimationFrame(function () {
       // Set the new bar width or height
       var sizeKey = _this2.vertical() ? 'height' : 'width'; // Convert to a percentage for css value
 
-      _this2.bar.el().style[sizeKey] = (progress * 100).toFixed(2) + '%';
-    });
+      _this2.bar.el().style[sizeKey] = (progress * 100).toFixed(2) + '%'; // Allow additional RAF's after update has completed
+
+      _this2.needsRequestAnimationFrame = true;
+    }); // Prevent additional RAF's from being called
+
+    this.needsRequestAnimationFrame = false;
     return progress;
   }
   /**
