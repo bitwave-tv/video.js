@@ -1,3 +1,21 @@
+<a name="7.8.3"></a>
+## [7.8.3](https://github.com/bitwave-tv/video.js/compare/v7.8.1...v7.8.3) (2020-04-28)
+
+### Features
+
+* adds disablePictureInPicture method to the player API. ([#6378](https://github.com/bitwave-tv/video.js/issues/6378)) ([dbd5203](https://github.com/bitwave-tv/video.js/commit/dbd5203))
+* support fastSeek during scrubbing if available ([#6525](https://github.com/bitwave-tv/video.js/issues/6525)) ([8c66c58](https://github.com/bitwave-tv/video.js/commit/8c66c58))
+
+### Bug Fixes
+
+* **lang:** Update pt-BR.json ([#6598](https://github.com/bitwave-tv/video.js/issues/6598)) ([90e2b0f](https://github.com/bitwave-tv/video.js/commit/90e2b0f))
+* **package:** update to [@videojs](https://github.com/videojs)/http-streaming[@1](https://github.com/1).13.3 ([#6610](https://github.com/bitwave-tv/video.js/issues/6610)) ([f779bad](https://github.com/bitwave-tv/video.js/commit/f779bad))
+* **text-tracks:** set withCredentials on XHR if crossOrigin='use-credentials' ([#6588](https://github.com/bitwave-tv/video.js/issues/6588)) ([a4ea1f9](https://github.com/bitwave-tv/video.js/commit/a4ea1f9)), closes [#6587](https://github.com/bitwave-tv/video.js/issues/6587)
+
+### Documentation
+
+* **faq:** update FAQ about HLS and DASH with VHS ([#6608](https://github.com/bitwave-tv/video.js/issues/6608)) ([808d818](https://github.com/bitwave-tv/video.js/commit/808d818)), closes [#6590](https://github.com/bitwave-tv/video.js/issues/6590)
+
 <a name="7.8.2"></a>
 ## [7.8.2](https://github.com/bitwave-tv/video.js/compare/v7.8.1...v7.8.2) (2020-04-28)
 
