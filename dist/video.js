@@ -1,6 +1,6 @@
 /**
  * @license
- * Video.js 7.8.2 <http://videojs.com/>
+ * Video.js 7.8.3 <http://videojs.com/>
  * Copyright Brightcove, Inc. <https://www.brightcove.com/>
  * Available under Apache License Version 2.0
  * <https://github.com/videojs/video.js/blob/master/LICENSE>
@@ -19,7 +19,7 @@
   window$3 = window$3 && Object.prototype.hasOwnProperty.call(window$3, 'default') ? window$3['default'] : window$3;
   document = document && Object.prototype.hasOwnProperty.call(document, 'default') ? document['default'] : document;
 
-  var version = "7.8.2";
+  var version = "7.8.3";
 
   /**
    * @file create-logger.js
@@ -15399,6 +15399,7 @@
 
       _this.setEventHandlers_();
 
+      _this.needsRequestAnimationFrame = true;
       return _this;
     }
     /**
@@ -15493,7 +15494,12 @@
     _proto.update = function update(event) {
       var _this2 = this;
 
-      var percent = _Slider.prototype.update.call(this);
+      var percent = _Slider.prototype.update.call(this); // Prevent multiple RAF's from being called when tab is in background since setInterval runs in background, but RAF does not.
+
+
+      if (!this.needsRequestAnimationFrame) {
+        return;
+      }
 
       this.requestAnimationFrame(function () {
         var currentTime = _this2.player_.ended() ? _this2.player_.duration() : _this2.getCurrentTime_();
@@ -15523,8 +15529,13 @@
 
         if (_this2.bar) {
           _this2.bar.update(getBoundingClientRect(_this2.el()), _this2.getProgress());
-        }
-      });
+        } // Allow additional RAF's after update has completed
+
+
+        _this2.needsRequestAnimationFrame = true;
+      }); // Prevent additional RAF's from being called
+
+      this.needsRequestAnimationFrame = false;
       return percent;
     }
     /**

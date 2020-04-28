@@ -1,6 +1,6 @@
 /**
  * @license
- * Video.js 7.8.2 <http://videojs.com/>
+ * Video.js 7.8.3 <http://videojs.com/>
  * Copyright Brightcove, Inc. <https://www.brightcove.com/>
  * Available under Apache License Version 2.0
  * <https://github.com/videojs/video.js/blob/master/LICENSE>
@@ -24,7 +24,7 @@ import vtt from 'videojs-vtt.js';
 import _construct from '@babel/runtime/helpers/construct';
 import _inherits from '@babel/runtime/helpers/inherits';
 
-var version = "7.8.2";
+var version = "7.8.3";
 
 /**
  * @file create-logger.js
@@ -12963,6 +12963,7 @@ var SeekBar = /*#__PURE__*/function (_Slider) {
 
     _this.setEventHandlers_();
 
+    _this.needsRequestAnimationFrame = true;
     return _this;
   }
   /**
@@ -13057,7 +13058,12 @@ var SeekBar = /*#__PURE__*/function (_Slider) {
   _proto.update = function update(event) {
     var _this2 = this;
 
-    var percent = _Slider.prototype.update.call(this);
+    var percent = _Slider.prototype.update.call(this); // Prevent multiple RAF's from being called when tab is in background since setInterval runs in background, but RAF does not.
+
+
+    if (!this.needsRequestAnimationFrame) {
+      return;
+    }
 
     this.requestAnimationFrame(function () {
       var currentTime = _this2.player_.ended() ? _this2.player_.duration() : _this2.getCurrentTime_();
@@ -13087,8 +13093,13 @@ var SeekBar = /*#__PURE__*/function (_Slider) {
 
       if (_this2.bar) {
         _this2.bar.update(getBoundingClientRect(_this2.el()), _this2.getProgress());
-      }
-    });
+      } // Allow additional RAF's after update has completed
+
+
+      _this2.needsRequestAnimationFrame = true;
+    }); // Prevent additional RAF's from being called
+
+    this.needsRequestAnimationFrame = false;
     return percent;
   }
   /**
