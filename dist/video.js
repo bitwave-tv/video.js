@@ -36022,9 +36022,9 @@
       i += 2;
       result.matrix = new Uint32Array(data.subarray(i, i + 9 * 4));
       i += 9 * 4;
-      result.width = view.getUint16(i) + view.getUint16(i + 2) / 65536;
+      result.width = view.getUint16(i) + view.getUint16(i + 2) / 16;
       i += 4;
-      result.height = view.getUint16(i) + view.getUint16(i + 2) / 65536;
+      result.height = view.getUint16(i) + view.getUint16(i + 2) / 16;
       return result;
     },
     traf: function traf(data) {
@@ -36630,13 +36630,7 @@
         result.payloadType = payloadType;
         result.payloadSize = payloadSize;
         result.payload = bytes.subarray(i, i + payloadSize);
-        var userIdentifier = String.fromCharCode(result.payload[3], result.payload[4], result.payload[5], result.payload[6]);
-
-        if (userIdentifier === 'GA94') {
-          break;
-        } else {
-          result.payload = void 0;
-        }
+        break;
       } // skip the payload and parse the next message
 
 
@@ -37893,15 +37887,11 @@
             seiNal.pts = matchingSample.pts;
             seiNal.dts = matchingSample.dts;
             lastMatchedSample = matchingSample;
-          } else if (lastMatchedSample) {
+          } else {
             // If a matching sample cannot be found, use the last
             // sample's values as they should be as close as possible
             seiNal.pts = lastMatchedSample.pts;
             seiNal.dts = lastMatchedSample.dts;
-          } else {
-            // eslint-disable-next-line no-console
-            console.log("We've encountered a nal unit without data. See mux.js#233.");
-            break;
           }
 
           result.push(seiNal);
@@ -39979,7 +39969,7 @@
 
   /**
    * @videojs/http-streaming
-   * @version 1.13.3
+   * @version 1.12.2
    * @copyright 2020 Brightcove, Inc
    * @license Apache-2.0
    */
@@ -43138,63 +43128,36 @@
         };
 
         videoTrun = function videoTrun(track, offset) {
-          var bytesOffest, bytes, header, samples, sample, i;
+          var bytes, samples, sample, i;
           samples = track.samples || [];
           offset += 8 + 12 + 16 * samples.length;
-          header = trunHeader(samples, offset);
-          bytes = new Uint8Array(header.length + samples.length * 16);
-          bytes.set(header);
-          bytesOffest = header.length;
+          bytes = trunHeader(samples, offset);
 
           for (i = 0; i < samples.length; i++) {
             sample = samples[i];
-            bytes[bytesOffest++] = (sample.duration & 0xFF000000) >>> 24;
-            bytes[bytesOffest++] = (sample.duration & 0xFF0000) >>> 16;
-            bytes[bytesOffest++] = (sample.duration & 0xFF00) >>> 8;
-            bytes[bytesOffest++] = sample.duration & 0xFF; // sample_duration
-
-            bytes[bytesOffest++] = (sample.size & 0xFF000000) >>> 24;
-            bytes[bytesOffest++] = (sample.size & 0xFF0000) >>> 16;
-            bytes[bytesOffest++] = (sample.size & 0xFF00) >>> 8;
-            bytes[bytesOffest++] = sample.size & 0xFF; // sample_size
-
-            bytes[bytesOffest++] = sample.flags.isLeading << 2 | sample.flags.dependsOn;
-            bytes[bytesOffest++] = sample.flags.isDependedOn << 6 | sample.flags.hasRedundancy << 4 | sample.flags.paddingValue << 1 | sample.flags.isNonSyncSample;
-            bytes[bytesOffest++] = sample.flags.degradationPriority & 0xF0 << 8;
-            bytes[bytesOffest++] = sample.flags.degradationPriority & 0x0F; // sample_flags
-
-            bytes[bytesOffest++] = (sample.compositionTimeOffset & 0xFF000000) >>> 24;
-            bytes[bytesOffest++] = (sample.compositionTimeOffset & 0xFF0000) >>> 16;
-            bytes[bytesOffest++] = (sample.compositionTimeOffset & 0xFF00) >>> 8;
-            bytes[bytesOffest++] = sample.compositionTimeOffset & 0xFF; // sample_composition_time_offset
+            bytes = bytes.concat([(sample.duration & 0xFF000000) >>> 24, (sample.duration & 0xFF0000) >>> 16, (sample.duration & 0xFF00) >>> 8, sample.duration & 0xFF, // sample_duration
+            (sample.size & 0xFF000000) >>> 24, (sample.size & 0xFF0000) >>> 16, (sample.size & 0xFF00) >>> 8, sample.size & 0xFF, // sample_size
+            sample.flags.isLeading << 2 | sample.flags.dependsOn, sample.flags.isDependedOn << 6 | sample.flags.hasRedundancy << 4 | sample.flags.paddingValue << 1 | sample.flags.isNonSyncSample, sample.flags.degradationPriority & 0xF0 << 8, sample.flags.degradationPriority & 0x0F, // sample_flags
+            (sample.compositionTimeOffset & 0xFF000000) >>> 24, (sample.compositionTimeOffset & 0xFF0000) >>> 16, (sample.compositionTimeOffset & 0xFF00) >>> 8, sample.compositionTimeOffset & 0xFF // sample_composition_time_offset
+            ]);
           }
 
-          return box(types.trun, bytes);
+          return box(types.trun, new Uint8Array(bytes));
         };
 
         audioTrun = function audioTrun(track, offset) {
-          var bytes, bytesOffest, header, samples, sample, i;
+          var bytes, samples, sample, i;
           samples = track.samples || [];
           offset += 8 + 12 + 8 * samples.length;
-          header = trunHeader(samples, offset);
-          bytes = new Uint8Array(header.length + samples.length * 8);
-          bytes.set(header);
-          bytesOffest = header.length;
+          bytes = trunHeader(samples, offset);
 
           for (i = 0; i < samples.length; i++) {
             sample = samples[i];
-            bytes[bytesOffest++] = (sample.duration & 0xFF000000) >>> 24;
-            bytes[bytesOffest++] = (sample.duration & 0xFF0000) >>> 16;
-            bytes[bytesOffest++] = (sample.duration & 0xFF00) >>> 8;
-            bytes[bytesOffest++] = sample.duration & 0xFF; // sample_duration
-
-            bytes[bytesOffest++] = (sample.size & 0xFF000000) >>> 24;
-            bytes[bytesOffest++] = (sample.size & 0xFF0000) >>> 16;
-            bytes[bytesOffest++] = (sample.size & 0xFF00) >>> 8;
-            bytes[bytesOffest++] = sample.size & 0xFF; // sample_size
+            bytes = bytes.concat([(sample.duration & 0xFF000000) >>> 24, (sample.duration & 0xFF0000) >>> 16, (sample.duration & 0xFF00) >>> 8, sample.duration & 0xFF, // sample_duration
+            (sample.size & 0xFF000000) >>> 24, (sample.size & 0xFF0000) >>> 16, (sample.size & 0xFF00) >>> 8, sample.size & 0xFF]); // sample_size
           }
 
-          return box(types.trun, bytes);
+          return box(types.trun, new Uint8Array(bytes));
         };
 
         trun = function trun(track, offset) {
@@ -43551,38 +43514,29 @@
           }, []));
           return obj;
         }, {});
+      }; // Frames-of-silence to use for filling in missing AAC frames
+
+
+      var coneOfSilence = {
+        96000: [highPrefix, [227, 64], zeroFill(154), [56]],
+        88200: [highPrefix, [231], zeroFill(170), [56]],
+        64000: [highPrefix, [248, 192], zeroFill(240), [56]],
+        48000: [highPrefix, [255, 192], zeroFill(268), [55, 148, 128], zeroFill(54), [112]],
+        44100: [highPrefix, [255, 192], zeroFill(268), [55, 163, 128], zeroFill(84), [112]],
+        32000: [highPrefix, [255, 192], zeroFill(268), [55, 234], zeroFill(226), [112]],
+        24000: [highPrefix, [255, 192], zeroFill(268), [55, 255, 128], zeroFill(268), [111, 112], zeroFill(126), [224]],
+        16000: [highPrefix, [255, 192], zeroFill(268), [55, 255, 128], zeroFill(268), [111, 255], zeroFill(269), [223, 108], zeroFill(195), [1, 192]],
+        12000: [lowPrefix, zeroFill(268), [3, 127, 248], zeroFill(268), [6, 255, 240], zeroFill(268), [13, 255, 224], zeroFill(268), [27, 253, 128], zeroFill(259), [56]],
+        11025: [lowPrefix, zeroFill(268), [3, 127, 248], zeroFill(268), [6, 255, 240], zeroFill(268), [13, 255, 224], zeroFill(268), [27, 255, 192], zeroFill(268), [55, 175, 128], zeroFill(108), [112]],
+        8000: [lowPrefix, zeroFill(268), [3, 121, 16], zeroFill(47), [7]]
       };
-
-      var silence;
-
-      var silence_1 = function silence_1() {
-        if (!silence) {
-          // Frames-of-silence to use for filling in missing AAC frames
-          var coneOfSilence = {
-            96000: [highPrefix, [227, 64], zeroFill(154), [56]],
-            88200: [highPrefix, [231], zeroFill(170), [56]],
-            64000: [highPrefix, [248, 192], zeroFill(240), [56]],
-            48000: [highPrefix, [255, 192], zeroFill(268), [55, 148, 128], zeroFill(54), [112]],
-            44100: [highPrefix, [255, 192], zeroFill(268), [55, 163, 128], zeroFill(84), [112]],
-            32000: [highPrefix, [255, 192], zeroFill(268), [55, 234], zeroFill(226), [112]],
-            24000: [highPrefix, [255, 192], zeroFill(268), [55, 255, 128], zeroFill(268), [111, 112], zeroFill(126), [224]],
-            16000: [highPrefix, [255, 192], zeroFill(268), [55, 255, 128], zeroFill(268), [111, 255], zeroFill(269), [223, 108], zeroFill(195), [1, 192]],
-            12000: [lowPrefix, zeroFill(268), [3, 127, 248], zeroFill(268), [6, 255, 240], zeroFill(268), [13, 255, 224], zeroFill(268), [27, 253, 128], zeroFill(259), [56]],
-            11025: [lowPrefix, zeroFill(268), [3, 127, 248], zeroFill(268), [6, 255, 240], zeroFill(268), [13, 255, 224], zeroFill(268), [27, 255, 192], zeroFill(268), [55, 175, 128], zeroFill(108), [112]],
-            8000: [lowPrefix, zeroFill(268), [3, 121, 16], zeroFill(47), [7]]
-          };
-          silence = makeTable(coneOfSilence);
-        }
-
-        return silence;
-      };
+      var silence = makeTable(coneOfSilence);
       /**
        * mux.js
        *
        * Copyright (c) Brightcove
        * Licensed Apache-2.0 https://github.com/videojs/mux.js/blob/master/LICENSE
        */
-
 
       var ONE_SECOND_IN_TS = 90000,
           // 90kHz clock
@@ -43695,7 +43649,7 @@
           return;
         }
 
-        silentFrame = silence_1()[track.samplerate];
+        silentFrame = silence[track.samplerate];
 
         if (!silentFrame) {
           // we don't have a silent frame pregenerated for the sample rate, so use a frame
@@ -45687,6 +45641,7 @@
 
               switch (data.streamType) {
                 case streamTypes.H264_STREAM_TYPE:
+                case streamTypes.H264_STREAM_TYPE:
                   stream$$1 = video;
                   streamType = 'video';
                   break;
@@ -46883,15 +46838,13 @@
       };
 
       _AacStream.prototype = new stream();
-      var aac = _AacStream; // constants
-
-      var AUDIO_PROPERTIES = ['audioobjecttype', 'channelcount', 'samplerate', 'samplingfrequencyindex', 'samplesize'];
-      var audioProperties = AUDIO_PROPERTIES;
-      var VIDEO_PROPERTIES = ['width', 'height', 'profileIdc', 'levelIdc', 'profileCompatibility', 'sarRatio'];
-      var videoProperties = VIDEO_PROPERTIES;
+      var aac = _AacStream;
       var H264Stream = h264.H264Stream;
       var isLikelyAacData$1 = utils.isLikelyAacData;
-      var ONE_SECOND_IN_TS$3 = clock.ONE_SECOND_IN_TS; // object types
+      var ONE_SECOND_IN_TS$3 = clock.ONE_SECOND_IN_TS; // constants
+
+      var AUDIO_PROPERTIES = ['audioobjecttype', 'channelcount', 'samplerate', 'samplingfrequencyindex', 'samplesize'];
+      var VIDEO_PROPERTIES = ['width', 'height', 'profileIdc', 'levelIdc', 'profileCompatibility', 'sarRatio']; // object types
 
       var _VideoSegmentStream, _AudioSegmentStream, _Transmuxer, _CoalesceStream;
       /**
@@ -46962,7 +46915,7 @@
           trackDecodeInfo.collectDtsInfo(track, data);
 
           if (track) {
-            audioProperties.forEach(function (prop) {
+            AUDIO_PROPERTIES.forEach(function (prop) {
               track[prop] = data[prop];
             });
           } // buffer audio data until end() is called
@@ -46972,7 +46925,7 @@
         };
 
         this.setEarliestDts = function (earliestDts) {
-          earliestAllowedDts = earliestDts;
+          earliestAllowedDts = earliestDts - track.timelineStartInfo.baseMediaDecodeTime;
         };
 
         this.setVideoBaseMediaDecodeTime = function (baseMediaDecodeTime) {
@@ -47073,7 +47026,7 @@
           if (nalUnit.nalUnitType === 'seq_parameter_set_rbsp' && !config) {
             config = nalUnit.config;
             track.sps = [nalUnit.data];
-            videoProperties.forEach(function (prop) {
+            VIDEO_PROPERTIES.forEach(function (prop) {
               track[prop] = config[prop];
             }, this);
           }
@@ -47557,12 +47510,12 @@
 
         if (this.videoTrack) {
           timelineStartPts = this.videoTrack.timelineStartInfo.pts;
-          videoProperties.forEach(function (prop) {
+          VIDEO_PROPERTIES.forEach(function (prop) {
             event.info[prop] = this.videoTrack[prop];
           }, this);
         } else if (this.audioTrack) {
           timelineStartPts = this.audioTrack.timelineStartInfo.pts;
-          audioProperties.forEach(function (prop) {
+          AUDIO_PROPERTIES.forEach(function (prop) {
             event.info[prop] = this.audioTrack[prop];
           }, this);
         }
@@ -47742,7 +47695,6 @@
           pipeline.h264Stream.pipe(pipeline.captionStream).pipe(pipeline.coalesceStream);
           pipeline.elementaryStream.on('data', function (data) {
             var i;
-            var baseMediaDecodeTime = !options.keepOriginalTimestamps ? self.baseMediaDecodeTime : 0;
 
             if (data.type === 'metadata') {
               i = data.tracks.length; // scan the tracks listed in the metadata
@@ -47750,10 +47702,10 @@
               while (i--) {
                 if (!videoTrack && data.tracks[i].type === 'video') {
                   videoTrack = data.tracks[i];
-                  videoTrack.timelineStartInfo.baseMediaDecodeTime = baseMediaDecodeTime;
+                  videoTrack.timelineStartInfo.baseMediaDecodeTime = self.baseMediaDecodeTime;
                 } else if (!audioTrack && data.tracks[i].type === 'audio') {
                   audioTrack = data.tracks[i];
-                  audioTrack.timelineStartInfo.baseMediaDecodeTime = baseMediaDecodeTime;
+                  audioTrack.timelineStartInfo.baseMediaDecodeTime = self.baseMediaDecodeTime;
                 }
               } // hook up the video segment stream to the first track with h264 data
 
@@ -47764,15 +47716,14 @@
                 pipeline.videoSegmentStream.on('timelineStartInfo', function (timelineStartInfo) {
                   // When video emits timelineStartInfo data after a flush, we forward that
                   // info to the AudioSegmentStream, if it exists, because video timeline
-                  // data takes precedence.  Do not do this if keepOriginalTimestamps is set,
-                  // because this is a particularly subtle form of timestamp alteration.
-                  if (audioTrack && !options.keepOriginalTimestamps) {
+                  // data takes precedence.
+                  if (audioTrack) {
                     audioTrack.timelineStartInfo = timelineStartInfo; // On the first segment we trim AAC frames that exist before the
                     // very earliest DTS we have seen in video because Chrome will
                     // interpret any video track with a baseMediaDecodeTime that is
                     // non-zero as a gap.
 
-                    pipeline.audioSegmentStream.setEarliestDts(timelineStartInfo.dts - self.baseMediaDecodeTime);
+                    pipeline.audioSegmentStream.setEarliestDts(timelineStartInfo.dts);
                   }
                 });
                 pipeline.videoSegmentStream.on('processedGopsInfo', self.trigger.bind(self, 'gopInfo'));
@@ -47817,12 +47768,19 @@
 
         this.setBaseMediaDecodeTime = function (baseMediaDecodeTime) {
           var pipeline = this.transmuxPipeline_;
-          this.baseMediaDecodeTime = baseMediaDecodeTime;
+
+          if (!options.keepOriginalTimestamps) {
+            this.baseMediaDecodeTime = baseMediaDecodeTime;
+          }
 
           if (audioTrack) {
             audioTrack.timelineStartInfo.dts = undefined;
             audioTrack.timelineStartInfo.pts = undefined;
             trackDecodeInfo.clearDtsInfo(audioTrack);
+
+            if (!options.keepOriginalTimestamps) {
+              audioTrack.timelineStartInfo.baseMediaDecodeTime = baseMediaDecodeTime;
+            }
 
             if (pipeline.audioTimestampRolloverStream) {
               pipeline.audioTimestampRolloverStream.discontinuity();
@@ -47838,6 +47796,10 @@
             videoTrack.timelineStartInfo.pts = undefined;
             trackDecodeInfo.clearDtsInfo(videoTrack);
             pipeline.captionStream.reset();
+
+            if (!options.keepOriginalTimestamps) {
+              videoTrack.timelineStartInfo.baseMediaDecodeTime = baseMediaDecodeTime;
+            }
           }
 
           if (pipeline.timestampRolloverStream) {
@@ -47913,8 +47875,8 @@
         Transmuxer: _Transmuxer,
         VideoSegmentStream: _VideoSegmentStream,
         AudioSegmentStream: _AudioSegmentStream,
-        AUDIO_PROPERTIES: audioProperties,
-        VIDEO_PROPERTIES: videoProperties,
+        AUDIO_PROPERTIES: AUDIO_PROPERTIES,
+        VIDEO_PROPERTIES: VIDEO_PROPERTIES,
         // exported for testing
         generateVideoSegmentTimingInfo: generateVideoSegmentTimingInfo
       };
@@ -49266,10 +49228,6 @@
     }, {
       key: 'dispose',
       value: function dispose() {
-        if (this.transmuxer_) {
-          this.transmuxer_.terminate();
-        }
-
         this.trigger('dispose');
         this.off();
       }
@@ -51343,9 +51301,9 @@
    * @param {Number} playerBandwidth
    *        Current calculated bandwidth of the player
    * @param {Number} playerWidth
-   *        Current width of the player element (should account for the device pixel ratio)
+   *        Current width of the player element
    * @param {Number} playerHeight
-   *        Current height of the player element (should account for the device pixel ratio)
+   *        Current height of the player element
    * @param {Boolean} limitRenditionByPlayerDimensions
    *        True if the player width and height should be used during the selection, false otherwise
    * @return {Playlist} the highest bitrate playlist less than the
@@ -51468,8 +51426,7 @@
 
 
   var lastBandwidthSelector = function lastBandwidthSelector() {
-    var pixelRatio = this.useDevicePixelRatio ? window$3.devicePixelRatio || 1 : 1;
-    return simpleSelector(this.playlists.master, this.systemBandwidth, parseInt(safeGetComputedStyle(this.tech_.el(), 'width'), 10) * pixelRatio, parseInt(safeGetComputedStyle(this.tech_.el(), 'height'), 10) * pixelRatio, this.limitRenditionByPlayerDimensions);
+    return simpleSelector(this.playlists.master, this.systemBandwidth, parseInt(safeGetComputedStyle(this.tech_.el(), 'width'), 10), parseInt(safeGetComputedStyle(this.tech_.el(), 'height'), 10), this.limitRenditionByPlayerDimensions);
   };
   /**
    * Chooses the appropriate media playlist based on the potential to rebuffer
@@ -52289,11 +52246,8 @@
       key: 'resetEverything',
       value: function resetEverything(done) {
         this.ended_ = false;
-        this.resetLoader(); // remove from 0, the earliest point, to Infinity, to signify removal of everything.
-        // VTT Segment Loader doesn't need to do anything but in the regular SegmentLoader,
-        // we then clamp the value to duration if necessary.
-
-        this.remove(0, Infinity, done); // clears fmp4 captions
+        this.resetLoader();
+        this.remove(0, this.duration_(), done); // clears fmp4 captions
 
         if (this.captionParser_) {
           this.captionParser_.clearAllCaptions();
@@ -52337,13 +52291,6 @@
     }, {
       key: 'remove',
       value: function remove(start, end, done) {
-        // clamp end to duration if we need to remove everything.
-        // This is due to a browser bug that causes issues if we remove to Infinity.
-        // videojs/videojs-contrib-hls#1225
-        if (end === Infinity) {
-          end = this.duration_();
-        }
-
         if (this.sourceUpdater_) {
           this.sourceUpdater_.remove(start, end, done);
         }
@@ -53186,7 +53133,6 @@
 
       _this.mediaSource_ = null;
       _this.subtitlesTrack_ = null;
-      _this.featuresNativeTextTracks_ = settings.featuresNativeTextTracks;
       return _this;
     }
     /**
@@ -53459,7 +53405,7 @@
         }
 
         segmentInfo.cues.forEach(function (cue) {
-          _this3.subtitlesTrack_.addCue(_this3.featuresNativeTextTracks_ ? new window$3.VTTCue(cue.startTime, cue.endTime, cue.text) : cue);
+          _this3.subtitlesTrack_.addCue(cue);
         });
         this.handleUpdateEnd_();
       }
@@ -55660,47 +55606,6 @@
   var sumLoaderStat = function sumLoaderStat(stat) {
     return this.audioSegmentLoader_[stat] + this.mainSegmentLoader_[stat];
   };
-
-  var shouldSwitchToMedia = function shouldSwitchToMedia(_ref) {
-    var currentPlaylist = _ref.currentPlaylist,
-        nextPlaylist = _ref.nextPlaylist,
-        forwardBuffer = _ref.forwardBuffer,
-        bufferLowWaterLine = _ref.bufferLowWaterLine,
-        duration$$1 = _ref.duration,
-        log = _ref.log; // we have no other playlist to switch to
-
-    if (!nextPlaylist) {
-      videojs$1.log.warn('We received no playlist to switch to. Please check your stream.');
-      return false;
-    } // If the playlist is live, then we want to not take low water line into account.
-    // This is because in LIVE, the player plays 3 segments from the end of the
-    // playlist, and if `BUFFER_LOW_WATER_LINE` is greater than the duration availble
-    // in those segments, a viewer will never experience a rendition upswitch.
-
-
-    if (!currentPlaylist.endList) {
-      return true;
-    } // For the same reason as LIVE, we ignore the low water line when the VOD
-    // duration is below the max potential low water line
-
-
-    if (duration$$1 < Config.MAX_BUFFER_LOW_WATER_LINE) {
-      return true;
-    } // we want to switch down to lower resolutions quickly to continue playback, but
-
-
-    if (nextPlaylist.attributes.BANDWIDTH < currentPlaylist.attributes.BANDWIDTH) {
-      return true;
-    } // ensure we have some buffer before we switch up to prevent us running out of
-    // buffer while loading a higher rendition.
-
-
-    if (forwardBuffer >= bufferLowWaterLine) {
-      return true;
-    }
-
-    return false;
-  };
   /**
    * the master playlist controller controller all interactons
    * between playlists and segmentloaders. At this time this mainly
@@ -55729,8 +55634,9 @@
           useCueTags = options.useCueTags,
           blacklistDuration = options.blacklistDuration,
           enableLowInitialPlaylist = options.enableLowInitialPlaylist,
-          cacheEncryptionKeys = options.cacheEncryptionKeys,
-          sourceType = options.sourceType;
+          sourceType = options.sourceType,
+          seekTo = options.seekTo,
+          cacheEncryptionKeys = options.cacheEncryptionKeys;
 
       if (!url) {
         throw new Error('A non-empty playlist URL is required');
@@ -55740,6 +55646,7 @@
       _this.withCredentials = withCredentials;
       _this.tech_ = tech;
       _this.hls_ = tech.hls;
+      _this.seekTo_ = seekTo;
       _this.sourceType_ = sourceType;
       _this.useCueTags_ = useCueTags;
       _this.blacklistDuration = blacklistDuration;
@@ -55810,8 +55717,7 @@
         loaderType: 'audio'
       }), options);
       _this.subtitleSegmentLoader_ = new VTTSegmentLoader(videojs$1.mergeOptions(segmentLoaderSettings, {
-        loaderType: 'vtt',
-        featuresNativeTextTracks: _this.tech_.featuresNativeTextTracks
+        loaderType: 'vtt'
       }), options);
 
       _this.setupSegmentLoaderListeners_(); // Create SegmentLoader stat-getters
@@ -56119,16 +56025,18 @@
 
           var forwardBuffer = buffered.length ? buffered.end(buffered.length - 1) - _this3.tech_.currentTime() : 0;
 
-          var bufferLowWaterLine = _this3.bufferLowWaterLine();
+          var bufferLowWaterLine = _this3.bufferLowWaterLine(); // If the playlist is live, then we want to not take low water line into account.
+          // This is because in LIVE, the player plays 3 segments from the end of the
+          // playlist, and if `BUFFER_LOW_WATER_LINE` is greater than the duration availble
+          // in those segments, a viewer will never experience a rendition upswitch.
 
-          if (shouldSwitchToMedia({
-            currentPlaylist: currentPlaylist,
-            nextPlaylist: nextPlaylist,
-            forwardBuffer: forwardBuffer,
-            bufferLowWaterLine: bufferLowWaterLine,
-            duration: _this3.duration(),
-            log: _this3.logger_
-          })) {
+
+          if (!currentPlaylist.endList || // For the same reason as LIVE, we ignore the low water line when the VOD
+          // duration is below the max potential low water line
+          _this3.duration() < Config.MAX_BUFFER_LOW_WATER_LINE || // we want to switch down to lower resolutions quickly to continue playback, but
+          nextPlaylist.attributes.BANDWIDTH < currentPlaylist.attributes.BANDWIDTH || // ensure we have some buffer before we switch up to prevent us running out of
+          // buffer while loading a higher rendition.
+          forwardBuffer >= bufferLowWaterLine) {
             _this3.masterPlaylistLoader_.media(nextPlaylist);
           }
 
@@ -56266,7 +56174,7 @@
         }
 
         if (this.tech_.ended()) {
-          this.tech_.setCurrentTime(0);
+          this.seekTo_(0);
         }
 
         if (this.hasPlayed_) {
@@ -56278,7 +56186,7 @@
 
         if (this.tech_.duration() === Infinity) {
           if (this.tech_.currentTime() < seekable$$1.start(0)) {
-            return this.tech_.setCurrentTime(seekable$$1.end(seekable$$1.length - 1));
+            return this.seekTo_(seekable$$1.end(seekable$$1.length - 1));
           }
         }
       }
@@ -56318,7 +56226,7 @@
             this.tech_.one('loadedmetadata', function () {
               _this5.trigger('firstplay');
 
-              _this5.tech_.setCurrentTime(seekable$$1.end(0));
+              _this5.seekTo_(seekable$$1.end(0));
 
               _this5.hasPlayed_ = true;
             });
@@ -56328,7 +56236,7 @@
 
           this.trigger('firstplay'); // seek to the live point
 
-          this.tech_.setCurrentTime(seekable$$1.end(0));
+          this.seekTo_(seekable$$1.end(0));
         }
 
         this.hasPlayed_ = true; // we can begin loading now that everything is ready
@@ -56746,11 +56654,7 @@
         var _this7 = this;
 
         this.trigger('dispose');
-
-        if (this.decrypter_) {
-          this.decrypter_.terminate();
-        }
-
+        this.decrypter_.terminate();
         this.masterPlaylistLoader_.dispose();
         this.mainSegmentLoader_.dispose();
         ['AUDIO', 'SUBTITLES'].forEach(function (type) {
@@ -57082,6 +56986,7 @@
       classCallCheck$1(this, PlaybackWatcher);
       this.tech_ = options.tech;
       this.seekable = options.seekable;
+      this.seekTo = options.seekTo;
       this.allowSeeksWithinUnsafeLiveWindow = options.allowSeeksWithinUnsafeLiveWindow;
       this.media = options.media;
       this.consecutiveUpdates = 0;
@@ -57247,7 +57152,7 @@
 
         if (typeof seekTo !== 'undefined') {
           this.logger_('Trying to seek outside of seekable at time ' + currentTime + ' with ' + ('seekable range ' + printableRange(seekable) + '. Seeking to ') + (seekTo + '.'));
-          this.tech_.setCurrentTime(seekTo);
+          this.seekTo(seekTo);
           return true;
         }
 
@@ -57280,7 +57185,7 @@
 
         if (currentRange.length && currentTime + 3 <= currentRange.end(0)) {
           this.cancelTimer_();
-          this.tech_.setCurrentTime(currentTime);
+          this.seekTo(currentTime);
           this.logger_('Stopped at ' + currentTime + ' while inside a buffered region ' + ('[' + currentRange.start(0) + ' -> ' + currentRange.end(0) + ']. Attempting to resume ') + 'playback by seeking to the current time.'); // unknown waiting corrections may be useful for monitoring QoS
 
           this.tech_.trigger({
@@ -57319,7 +57224,7 @@
           var livePoint = seekable.end(seekable.length - 1);
           this.logger_('Fell out of live window at time ' + currentTime + '. Seeking to ' + ('live point (seekable end) ' + livePoint));
           this.cancelTimer_();
-          this.tech_.setCurrentTime(livePoint); // live window resyncs may be useful for monitoring QoS
+          this.seekTo(livePoint); // live window resyncs may be useful for monitoring QoS
 
           this.tech_.trigger({
             type: 'usage',
@@ -57337,7 +57242,7 @@
           // allows the video to catch up to the audio position without losing any audio
           // (only suffering ~3 seconds of frozen video and a pause in audio playback).
           this.cancelTimer_();
-          this.tech_.setCurrentTime(currentTime); // video underflow may be useful for monitoring QoS
+          this.seekTo(currentTime); // video underflow may be useful for monitoring QoS
 
           this.tech_.trigger({
             type: 'usage',
@@ -57427,7 +57332,7 @@
 
         this.logger_('skipTheGap_:', 'currentTime:', currentTime, 'scheduled currentTime:', scheduledCurrentTime, 'nextRange start:', nextRange.start(0)); // only seek if we still have not played
 
-        this.tech_.setCurrentTime(nextRange.start(0) + TIME_FUDGE_FACTOR);
+        this.seekTo(nextRange.start(0) + TIME_FUDGE_FACTOR);
         this.tech_.trigger({
           type: 'usage',
           name: 'hls-gap-skip'
@@ -57610,7 +57515,36 @@
     initPlugin(this, options);
   };
 
-  var version$1 = "1.13.3";
+  var version$1 = "1.12.2"; // since VHS handles HLS and DASH (and in the future, more types), use * to capture all
+
+  videojs$1.use('*', function (player) {
+    return {
+      setSource: function setSource(srcObj, next) {
+        // pass null as the first argument to indicate that the source is not rejected
+        next(null, srcObj);
+      },
+      // VHS needs to know when seeks happen. For external seeks (generated at the player
+      // level), this middleware will capture the action. For internal seeks (generated at
+      // the tech level), we use a wrapped function so that we can handle it on our own
+      // (specified elsewhere).
+      setCurrentTime: function setCurrentTime(time) {
+        if (player.vhs && player.currentSource().src === player.vhs.source_.src) {
+          player.vhs.setCurrentTime(time);
+        }
+
+        return time;
+      },
+      // Sync VHS after play requests.
+      // This specifically handles replay where the order of actions is
+      // play, video element will seek to 0 (skipping the setCurrentTime middleware)
+      // then triggers a play event.
+      play: function play() {
+        if (player.vhs && player.currentSource().src === player.vhs.source_.src) {
+          player.vhs.setCurrentTime(player.tech_.currentTime());
+        }
+      }
+    };
+  });
   /**
    * @file videojs-http-streaming.js
    *
@@ -57936,7 +57870,6 @@
       _this.tech_ = tech;
       _this.source_ = source;
       _this.stats = {};
-      _this.ignoreNextSeekingEvent_ = false;
 
       _this.setOptions_();
 
@@ -57957,15 +57890,13 @@
         if (fullscreenElement && fullscreenElement.contains(_this.tech_.el())) {
           _this.masterPlaylistController_.smoothQualityChange_();
         }
-      });
+      }); // Handle seeking when looping - middleware doesn't handle this seek event from the tech
+
 
       _this.on(_this.tech_, 'seeking', function () {
-        if (this.ignoreNextSeekingEvent_) {
-          this.ignoreNextSeekingEvent_ = false;
-          return;
+        if (this.tech_.currentTime() === 0 && this.tech_.player_.loop()) {
+          this.setCurrentTime(0);
         }
-
-        this.setCurrentTime(this.tech_.currentTime());
       });
 
       _this.on(_this.tech_, 'error', function () {
@@ -57988,7 +57919,6 @@
         this.options_.withCredentials = this.options_.withCredentials || false;
         this.options_.handleManifestRedirects = this.options_.handleManifestRedirects || false;
         this.options_.limitRenditionByPlayerDimensions = this.options_.limitRenditionByPlayerDimensions === false ? false : true;
-        this.options_.useDevicePixelRatio = this.options_.useDevicePixelRatio || false;
         this.options_.smoothQualityChange = this.options_.smoothQualityChange || false;
         this.options_.useBandwidthFromLocalStorage = typeof this.source_.useBandwidthFromLocalStorage !== 'undefined' ? this.source_.useBandwidthFromLocalStorage : this.options_.useBandwidthFromLocalStorage || false;
         this.options_.customTagParsers = this.options_.customTagParsers || [];
@@ -58031,13 +57961,12 @@
 
         this.options_.enableLowInitialPlaylist = this.options_.enableLowInitialPlaylist && this.options_.bandwidth === Config.INITIAL_BANDWIDTH; // grab options passed to player.src
 
-        ['withCredentials', 'useDevicePixelRatio', 'limitRenditionByPlayerDimensions', 'bandwidth', 'smoothQualityChange', 'customTagParsers', 'customTagMappers', 'handleManifestRedirects', 'cacheEncryptionKeys'].forEach(function (option) {
+        ['withCredentials', 'limitRenditionByPlayerDimensions', 'bandwidth', 'smoothQualityChange', 'customTagParsers', 'customTagMappers', 'handleManifestRedirects', 'cacheEncryptionKeys'].forEach(function (option) {
           if (typeof _this2.source_[option] !== 'undefined') {
             _this2.options_[option] = _this2.source_[option];
           }
         });
         this.limitRenditionByPlayerDimensions = this.options_.limitRenditionByPlayerDimensions;
-        this.useDevicePixelRatio = this.options_.useDevicePixelRatio;
       }
       /**
        * called when player.src gets called, handle a new source
@@ -58060,10 +57989,14 @@
         this.options_.url = this.source_.src;
         this.options_.tech = this.tech_;
         this.options_.externHls = Hls$1;
-        this.options_.sourceType = simpleTypeFromSourceType(type); // Whenever we seek internally, we should update the tech
+        this.options_.sourceType = simpleTypeFromSourceType(type); // Whenever we seek internally, we should update both the tech and call our own
+        // setCurrentTime function. This is needed because "seeking" events aren't always
+        // reliable. External seeks (via the player object) are handled via middleware.
 
         this.options_.seekTo = function (time) {
           _this3.tech_.setCurrentTime(time);
+
+          _this3.setCurrentTime(time);
         };
 
         this.masterPlaylistController_ = new MasterPlaylistController(this.options_);
@@ -58290,11 +58223,6 @@
 
         this.on(this.masterPlaylistController_, 'progress', function () {
           this.tech_.trigger('progress');
-        }); // In the live case, we need to ignore the very first `seeking` event since
-        // that will be the result of the seek-to-live behavior
-
-        this.on(this.masterPlaylistController_, 'firstplay', function () {
-          this.ignoreNextSeekingEvent_ = true;
         });
         this.setupQualityLevels_(); // do nothing if the tech has been disposed already
         // this can occur if someone sets the src in player.ready(), for instance
