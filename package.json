@@ -1,7 +1,7 @@
 {
   "name": "@bitwave/video.js",
   "description": "An HTML5 video player that supports HLS and DASH with a common API and skin.",
-  "version": "7.8.6",
+  "version": "7.8.7",
   "main": "./dist/video.cjs.js",
   "module": "./dist/video.es.js",
   "style": "./dist/video-js.css",
@@ -82,7 +82,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.9.2",
-    "@videojs/http-streaming": "1.13.3",
+    "@videojs/http-streaming": "^2.0.0-rc.2",
     "@videojs/xhr": "2.5.1",
     "global": "4.3.2",
     "keycode": "^2.2.0",
